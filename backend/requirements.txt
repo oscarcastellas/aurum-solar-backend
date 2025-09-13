@@ -25,6 +25,7 @@ openai>=1.6.1
 # Data validation
 pydantic==2.5.0
 pydantic-settings==2.1.0
+email-validator==2.1.0
 
 # Monitoring and logging
 structlog==23.2.0
@@ -34,3 +35,6 @@ python-dotenv==1.0.0
 
 # Utilities
 jinja2==3.1.2
+
+# Additional dependencies for Pydantic
+typing-extensions>=4.6.0

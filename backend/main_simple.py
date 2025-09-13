@@ -16,7 +16,7 @@ import os
 from app.core.config import settings
 from app.core.database import init_db, get_db
 from app.core.redis import init_redis, get_redis
-from app.api.v1.api import api_router
+# from app.api.v1.api import api_router  # Commented out to avoid complex dependencies
 
 # Configure structured logging
 structlog.configure(
@@ -117,8 +117,8 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include API routes
-app.include_router(api_router, prefix="/api/v1")
+# Include API routes (commented out to avoid complex dependencies)
+# app.include_router(api_router, prefix="/api/v1")
 
 # Health check endpoints
 @app.get("/health")
