@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: aurum-solar-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements-minimal.txt
+    startCommand: uvicorn main_simple:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aurum-solar-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: aurum-solar-redis
+          property: connectionString
+
+databases:
+  - name: aurum-solar-db
+    plan: free
+    databaseName: aurum_solar
+    user: aurum_user
+
+  - name: aurum-solar-redis
+    plan: free
+    type: redis
