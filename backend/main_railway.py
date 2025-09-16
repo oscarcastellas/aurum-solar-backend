@@ -3,14 +3,17 @@ Railway-optimized FastAPI application for production deployment
 This version is specifically designed for Railway's deployment environment
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import structlog
 from contextlib import asynccontextmanager
 import asyncio
 import time
-from typing import Dict, Any
+import json
+import uuid
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 import os
 
 # Configure structured logging
@@ -38,6 +41,58 @@ logger = structlog.get_logger()
 ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aurum-solar.vercel.app")
 PORT = int(os.getenv("PORT", 8000))
+
+# WebSocket Connection Manager
+class ConnectionManager:
+    """Manages WebSocket connections for real-time AI chat"""
+    
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+        self.conversation_sessions: Dict[str, Dict[str, Any]] = {}
+    
+    async def connect(self, websocket: WebSocket, session_id: str):
+        """Accept WebSocket connection and initialize session"""
+        await websocket.accept()
+        self.active_connections[session_id] = websocket
+        
+        # Initialize conversation session
+        self.conversation_sessions[session_id] = {
+            "session_id": session_id,
+            "connected_at": datetime.utcnow(),
+            "message_count": 0,
+            "lead_id": None,
+            "conversation_stage": "welcome",
+            "lead_score": 0,
+            "quality_tier": "unqualified"
+        }
+        
+        logger.info("WebSocket connected", session_id=session_id)
+    
+    def disconnect(self, session_id: str):
+        """Remove WebSocket connection and cleanup session"""
+        if session_id in self.active_connections:
+            del self.active_connections[session_id]
+        if session_id in self.conversation_sessions:
+            del self.conversation_sessions[session_id]
+        
+        logger.info("WebSocket disconnected", session_id=session_id)
+    
+    async def send_personal_message(self, message: Dict[str, Any], session_id: str):
+        """Send message to specific session"""
+        if session_id in self.active_connections:
+            try:
+                await self.active_connections[session_id].send_text(json.dumps(message))
+            except Exception as e:
+                logger.error("Error sending message", session_id=session_id, error=str(e))
+                self.disconnect(session_id)
+    
+    def update_session(self, session_id: str, updates: Dict[str, Any]):
+        """Update session data"""
+        if session_id in self.conversation_sessions:
+            self.conversation_sessions[session_id].update(updates)
+
+# Global connection manager
+manager = ConnectionManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -393,6 +448,310 @@ async def get_export_history():
     except Exception as e:
         logger.error("Export history error", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to retrieve export history")
+
+# WebSocket Chat Endpoint for Real-time AI Conversations
+@app.websocket("/ws/chat")
+async def websocket_chat_endpoint(websocket: WebSocket, session_id: str = None):
+    """Real-time AI conversation WebSocket endpoint"""
+    
+    # Generate session ID if not provided
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    
+    # Connect to WebSocket
+    await manager.connect(websocket, session_id)
+    
+    try:
+        # Send welcome message
+        welcome_message = {
+            "type": "welcome",
+            "message": "Welcome! I'm your NYC solar consultant. I can help you explore solar options and calculate your potential savings. What's driving your interest in solar energy?",
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "suggestions": [
+                "What's your monthly electric bill?",
+                "Do you own your home?",
+                "What zip code are you in?"
+            ]
+        }
+        
+        await manager.send_personal_message(welcome_message, session_id)
+        
+        # Main conversation loop
+        while True:
+            try:
+                # Receive message from client
+                data = await websocket.receive_text()
+                message_data = json.loads(data)
+                
+                # Extract message content
+                user_message = message_data.get("message", "")
+                message_type = message_data.get("type", "user_message")
+                
+                # Update session
+                session = manager.conversation_sessions.get(session_id)
+                if session:
+                    session["message_count"] += 1
+                    session["last_message_at"] = datetime.utcnow()
+                
+                # Process message with AI
+                if message_type == "user_message":
+                    await process_ai_message(websocket, session_id, user_message)
+                elif message_type == "get_nyc_data":
+                    await process_nyc_data_request(websocket, session_id, message_data)
+                elif message_type == "get_lead_status":
+                    await process_lead_status_request(websocket, session_id)
+                else:
+                    await send_error_message(websocket, "Unknown message type")
+                
+            except json.JSONDecodeError:
+                await send_error_message(websocket, "Invalid JSON format")
+            except Exception as e:
+                logger.error("Error processing message", error=str(e))
+                await send_error_message(websocket, "Error processing your message")
+    
+    except WebSocketDisconnect:
+        manager.disconnect(session_id)
+    except Exception as e:
+        logger.error("WebSocket error", error=str(e))
+        manager.disconnect(session_id)
+
+async def process_ai_message(websocket: WebSocket, session_id: str, message: str):
+    """Process user message with AI and send response"""
+    try:
+        # Import OpenAI for AI responses
+        try:
+            import openai
+            from app.core.config import settings
+            
+            # Initialize OpenAI client
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            
+            # Create AI-powered response
+            system_prompt = """You are a solar energy consultant for Aurum Solar, specializing in the NYC market. 
+            
+            Your goals:
+            1. Qualify leads for solar installation
+            2. Gather property details (ZIP code, electric bill, roof type, homeownership)
+            3. Explain NYC solar incentives and benefits
+            4. Calculate potential savings
+            5. Schedule consultations when appropriate
+            
+            Be helpful, professional, and knowledgeable about NYC solar market. 
+            Keep responses concise but informative. Ask follow-up questions to gather more details.
+            Focus on NYC-specific incentives, borough data, and local solar potential."""
+            
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            ai_response = response.choices[0].message.content
+            
+        except Exception as ai_error:
+            logger.warning("AI service unavailable, using fallback", error=str(ai_error))
+            # Fallback to rule-based responses
+            if "zip" in message.lower() or "10001" in message:
+                ai_response = "I see you're in NYC! Let me help you understand your solar potential. What's your average monthly electric bill?"
+            elif "bill" in message.lower() or "$" in message:
+                ai_response = "Great! Based on your electric bill, you could save $200-400 per month with solar. Do you own your home?"
+            elif "own" in message.lower() or "homeowner" in message.lower():
+                ai_response = "Perfect! As a homeowner, you qualify for solar incentives. What type of roof do you have?"
+            elif "roof" in message.lower():
+                ai_response = "Excellent! Your roof type is suitable for solar. Would you like me to connect you with qualified installers for a free quote?"
+            else:
+                ai_response = "I'd love to help you explore solar options for your NYC home. What's your ZIP code?"
+        
+        # Send AI response
+        ai_message = {
+            "type": "ai_response",
+            "message": ai_response,
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "conversation_stage": "active",
+            "lead_score": 75,  # Mock lead score
+            "quality_tier": "standard"
+        }
+        
+        await manager.send_personal_message(ai_message, session_id)
+        
+    except Exception as e:
+        logger.error("Error processing AI message", error=str(e))
+        await send_error_message(websocket, "I'm having trouble processing your message. Please try again.")
+
+async def process_nyc_data_request(websocket: WebSocket, session_id: str, message_data: Dict[str, Any]):
+    """Process NYC market data request"""
+    try:
+        zip_code = message_data.get("zip_code", "")
+        
+        # Mock NYC market data
+        nyc_data = {
+            "zip_code": zip_code,
+            "borough": "Manhattan" if zip_code.startswith("100") else "Brooklyn",
+            "solar_potential": "High",
+            "incentives": [
+                "NYC Solar Property Tax Abatement",
+                "Federal Solar Tax Credit (30%)",
+                "NYSERDA Solar Incentive"
+            ],
+            "average_savings": "$200-400/month",
+            "payback_period": "5-7 years"
+        }
+        
+        response = {
+            "type": "nyc_data",
+            "data": nyc_data,
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        await manager.send_personal_message(response, session_id)
+        
+    except Exception as e:
+        logger.error("Error processing NYC data request", error=str(e))
+        await send_error_message(websocket, "Error retrieving NYC market data")
+
+async def process_lead_status_request(websocket: WebSocket, session_id: str):
+    """Process lead status request"""
+    try:
+        session = manager.conversation_sessions.get(session_id, {})
+        
+        lead_status = {
+            "session_id": session_id,
+            "lead_id": session.get("lead_id"),
+            "conversation_stage": session.get("conversation_stage", "welcome"),
+            "lead_score": session.get("lead_score", 0),
+            "quality_tier": session.get("quality_tier", "unqualified"),
+            "message_count": session.get("message_count", 0),
+            "connected_at": session.get("connected_at", datetime.utcnow()).isoformat(),
+            "last_message_at": session.get("last_message_at", datetime.utcnow()).isoformat()
+        }
+        
+        response = {
+            "type": "lead_status",
+            "data": lead_status,
+            "session_id": session_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        await manager.send_personal_message(response, session_id)
+        
+    except Exception as e:
+        logger.error("Error processing lead status request", error=str(e))
+        await send_error_message(websocket, "Error retrieving lead status")
+
+async def send_error_message(websocket: WebSocket, message: str):
+    """Send error message to client"""
+    try:
+        error_response = {
+            "type": "error",
+            "message": message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await websocket.send_text(json.dumps(error_response))
+    except Exception as e:
+        logger.error("Error sending error message", error=str(e))
+
+# Advanced Conversation API
+@app.post("/api/v1/conversation")
+async def process_conversation(request: dict):
+    """Process conversation message and return AI response"""
+    try:
+        message = request.get("message", "")
+        session_id = request.get("session_id", str(uuid.uuid4()))
+        
+        # Process with AI (same logic as WebSocket)
+        try:
+            import openai
+            from app.core.config import settings
+            
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+            
+            system_prompt = """You are a solar energy consultant for Aurum Solar, specializing in the NYC market. 
+            
+            Your goals:
+            1. Qualify leads for solar installation
+            2. Gather property details (ZIP code, electric bill, roof type, homeownership)
+            3. Explain NYC solar incentives and benefits
+            4. Calculate potential savings
+            5. Schedule consultations when appropriate
+            
+            Be helpful, professional, and knowledgeable about NYC solar market. 
+            Keep responses concise but informative. Ask follow-up questions to gather more details.
+            Focus on NYC-specific incentives, borough data, and local solar potential."""
+            
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": message}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            ai_response = response.choices[0].message.content
+            
+        except Exception as ai_error:
+            logger.warning("AI service unavailable, using fallback", error=str(ai_error))
+            # Fallback responses
+            if "zip" in message.lower() or "10001" in message:
+                ai_response = "I see you're in NYC! Let me help you understand your solar potential. What's your average monthly electric bill?"
+            elif "bill" in message.lower() or "$" in message:
+                ai_response = "Great! Based on your electric bill, you could save $200-400 per month with solar. Do you own your home?"
+            elif "own" in message.lower() or "homeowner" in message.lower():
+                ai_response = "Perfect! As a homeowner, you qualify for solar incentives. What type of roof do you have?"
+            elif "roof" in message.lower():
+                ai_response = "Excellent! Your roof type is suitable for solar. Would you like me to connect you with qualified installers for a free quote?"
+            else:
+                ai_response = "I'd love to help you explore solar options for your NYC home. What's your ZIP code?"
+        
+        return {
+            "response": ai_response,
+            "session_id": session_id,
+            "timestamp": time.time(),
+            "conversation_stage": "active",
+            "lead_score": 75,
+            "quality_tier": "standard",
+            "status": "success"
+        }
+        
+    except Exception as e:
+        logger.error("Conversation processing error", error=str(e))
+        raise HTTPException(status_code=500, detail="Conversation processing failed")
+
+# NYC Market Data API
+@app.get("/api/v1/analytics/nyc-market")
+async def get_nyc_market_data(zip_code: str = "10001"):
+    """Get NYC market intelligence data"""
+    try:
+        # Mock NYC market data
+        nyc_data = {
+            "zip_code": zip_code,
+            "borough": "Manhattan" if zip_code.startswith("100") else "Brooklyn",
+            "solar_potential": "High",
+            "incentives": [
+                "NYC Solar Property Tax Abatement",
+                "Federal Solar Tax Credit (30%)",
+                "NYSERDA Solar Incentive"
+            ],
+            "average_savings": "$200-400/month",
+            "payback_period": "5-7 years",
+            "installation_cost": "$15,000-25,000",
+            "roi_percentage": "15-25%",
+            "timestamp": time.time()
+        }
+        
+        return nyc_data
+        
+    except Exception as e:
+        logger.error("NYC market data error", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve NYC market data")
 
 # Error handlers
 @app.exception_handler(404)
