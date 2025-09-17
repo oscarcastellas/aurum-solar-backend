@@ -122,7 +122,7 @@ export const useRailwayMonitoring = () => {
   useEffect(() => {
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
-        if (entry.name.includes('backend-production-3f24.up.railway.app')) {
+        if (entry.name.includes('aurum-solarv3-production.up.railway.app')) {
           setMetrics(prev => ({
             ...prev,
             averageLatency: (prev.averageLatency + entry.duration) / 2,

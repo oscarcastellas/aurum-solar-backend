@@ -4,7 +4,7 @@ export const CORS_CONFIG = {
     'https://aurum-solar.vercel.app',
     'http://localhost:3001',
     'http://localhost:5173', // Vite dev server
-    'https://backend-production-3f24.up.railway.app'
+    'https://aurum-solarv3-production.up.railway.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

@@ -119,7 +119,7 @@ export const runRailwayTestSuite = async () => {
 export const monitorPerformance = () => {
   const observer = new PerformanceObserver((list) => {
     list.getEntries().forEach((entry) => {
-      if (entry.name.includes('backend-production-3f24.up.railway.app')) {
+        if (entry.name.includes('aurum-solarv3-production.up.railway.app')) {
         console.log(`🚀 API Call: ${entry.name} - ${entry.duration.toFixed(2)}ms`);
         
         // Log slow requests
@@ -141,7 +141,7 @@ export const monitorPerformance = () => {
  */
 export const quickHealthCheck = async (): Promise<boolean> => {
   try {
-    const response = await fetch('https://backend-production-3f24.up.railway.app/health', {
+    const response = await fetch('https://aurum-solarv3-production.up.railway.app/health', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000)
