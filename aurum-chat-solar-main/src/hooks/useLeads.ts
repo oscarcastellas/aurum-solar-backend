@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient, type LeadData, type Lead } from '@/services/apiClient';
+import { completeApiClient, type LeadData, type Lead } from '@/services/apiClient';
 
 export const useLeads = () => {
   const queryClient = useQueryClient();
 
   const createLead = useMutation({
-    mutationFn: (leadData: LeadData) => apiClient.createLead(leadData),
+    mutationFn: (leadData: LeadData) => completeApiClient.createLead(leadData),
     onSuccess: (newLead: Lead) => {
       // Invalidate and refetch leads list
       queryClient.invalidateQueries({ queryKey: ['leads'] });
@@ -20,7 +20,7 @@ export const useLeads = () => {
 
   const updateLead = useMutation({
     mutationFn: ({ leadId, updates }: { leadId: string; updates: Partial<Lead> }) =>
-      apiClient.updateLead(leadId, updates),
+      completeApiClient.updateLead(leadId, updates),
     onSuccess: (updatedLead: Lead) => {
       // Update the specific lead in cache
       queryClient.setQueryData(['leads', updatedLead.id], updatedLead);
@@ -36,7 +36,7 @@ export const useLeads = () => {
   const getLead = (leadId: string) => {
     return useQuery({
       queryKey: ['leads', leadId],
-      queryFn: () => apiClient.getLead(leadId),
+      queryFn: () => completeApiClient.getLead(leadId),
       enabled: !!leadId,
     });
   };

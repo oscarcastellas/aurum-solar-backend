@@ -286,12 +286,6 @@ class CompleteAPIClient {
     });
   }
 
-  async getNYCMarketData(zipCode: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.NYC_MARKET_DATA, {
-      method: 'POST',
-      body: JSON.stringify({ zip_code: zipCode })
-    });
-  }
 
   async calculateSavings(input: any): Promise<ApiResponse<any>> {
     return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.CALCULATE_SAVINGS, {

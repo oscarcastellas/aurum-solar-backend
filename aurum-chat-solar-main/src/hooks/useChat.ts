@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, type ChatRequest, type ChatResponse, type ChatMessage } from '@/services/apiClient';
+import { completeApiClient, type ChatRequest, type ChatResponse, type ChatMessage } from '@/services/apiClient';
 
 export const useChat = (sessionId: string) => {
   const queryClient = useQueryClient();
@@ -25,7 +25,7 @@ export const useChat = (sessionId: string) => {
         },
       };
       
-      return apiClient.sendMessage(request);
+      return completeApiClient.sendChatMessage(request.message, request.session_id);
     },
     onSuccess: (data: ChatResponse) => {
       // Add bot response to messages

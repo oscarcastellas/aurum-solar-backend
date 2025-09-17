@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, type NYCStatsResponse, type BoroughStats } from '@/services/apiClient';
+import { completeApiClient, type NYCStatsResponse, type BoroughStats } from '@/services/apiClient';
 
 export const useNYCStats = () => {
   const [selectedBorough, setSelectedBorough] = useState<string>('brooklyn');

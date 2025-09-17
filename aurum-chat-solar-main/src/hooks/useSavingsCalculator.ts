@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiClient, type SavingsInput, type SavingsResult, type IncentiveData } from '@/services/apiClient';
+import { completeApiClient, type SavingsInput, type SavingsResult, type IncentiveData } from '@/services/apiClient';
 
 export const useSavingsCalculator = () => {
   const [input, setInput] = useState<SavingsInput>({
@@ -13,7 +13,7 @@ export const useSavingsCalculator = () => {
   });
 
   const calculateSavings = useMutation({
-    mutationFn: (data: SavingsInput) => apiClient.calculateSavings(data),
+    mutationFn: (data: SavingsInput) => completeApiClient.calculateSavings(data),
     onSuccess: (data: SavingsResult) => {
       console.log('Savings calculated:', data);
     },
@@ -24,14 +24,14 @@ export const useSavingsCalculator = () => {
 
   const { data: incentives, isLoading: incentivesLoading } = useQuery({
     queryKey: ['incentives', input.zipCode],
-    queryFn: () => apiClient.getNYCIncentives(input.zipCode),
+    queryFn: () => completeApiClient.getNYCMarketData(input.zipCode),
     enabled: !!input.zipCode && input.zipCode.length === 5,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: electricityRates, isLoading: ratesLoading } = useQuery({
     queryKey: ['electricity-rates', input.zipCode],
-    queryFn: () => apiClient.getElectricityRates(input.zipCode),
+    queryFn: () => completeApiClient.getNYCMarketData(input.zipCode),
     enabled: !!input.zipCode && input.zipCode.length === 5,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });

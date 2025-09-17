@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import path from 'path'
 
 // https://vitejs.dev/config/
@@ -32,13 +32,13 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:8000',
+        target: process.env.VITE_API_BASE_URL || 'https://backend-production-3f24.up.railway.app',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/ws': {
-        target: process.env.VITE_WS_URL || 'ws://localhost:8000',
+        target: process.env.VITE_WS_BASE_URL || 'wss://backend-production-3f24.up.railway.app',
         ws: true,
         changeOrigin: true,
         secure: true
@@ -50,7 +50,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:8000',
+        target: process.env.VITE_API_BASE_URL || 'https://backend-production-3f24.up.railway.app',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, '')
@@ -65,7 +65,7 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'react-query',
+      '@tanstack/react-query',
       'chart.js',
       'react-chartjs-2',
       'date-fns',
