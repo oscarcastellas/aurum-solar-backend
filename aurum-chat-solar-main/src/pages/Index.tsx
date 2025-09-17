@@ -3,7 +3,7 @@ import { HeroSection } from '@/components/HeroSection';
 import { SavingsCalculator } from '@/components/SavingsCalculator';
 import { NYCStatsPanel } from '@/components/NYCStatsPanel';
 import { TrustSection } from '@/components/TrustSection';
-import { AdvancedChatInterface } from '@/components/AdvancedChatInterface';
+import { SimpleChatInterface } from '@/components/SimpleChatInterface';
 import { RevenueDashboard } from '@/components/RevenueDashboard';
 import { RailwayConnectionTest } from '@/components/RailwayConnectionTest';
 import { RailwayTestSuite } from '@/components/RailwayTestSuite';
@@ -41,8 +41,8 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Advanced Chat Interface */}
-      <AdvancedChatInterface 
+      {/* Simple Chat Interface */}
+      <SimpleChatInterface 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)}
       />
