@@ -32,13 +32,13 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'https://backend-production-3f24.up.railway.app',
+        target: process.env.VITE_API_BASE_URL || 'https://aurum-solarv3-production.up.railway.app',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/ws': {
-        target: process.env.VITE_WS_BASE_URL || 'wss://backend-production-3f24.up.railway.app',
+        target: process.env.VITE_WS_BASE_URL || 'wss://aurum-solarv3-production.up.railway.app',
         ws: true,
         changeOrigin: true,
         secure: true
@@ -50,7 +50,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'https://backend-production-3f24.up.railway.app',
+        target: process.env.VITE_API_BASE_URL || 'https://aurum-solarv3-production.up.railway.app',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api/, '')

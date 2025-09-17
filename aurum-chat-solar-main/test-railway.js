@@ -7,7 +7,7 @@
 
 const https = require('https');
 
-const RAILWAY_URL = 'https://backend-production-3f24.up.railway.app';
+const RAILWAY_URL = 'https://aurum-solarv3-production.up.railway.app';
 
 // Test results storage
 const testResults = {

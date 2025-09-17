@@ -2,9 +2,9 @@
 export const CORS_CONFIG = {
   origin: [
     'https://aurum-solar.vercel.app',
+    'https://aurum-solar-3twf93hl6-oscars-projects-526af1dc.vercel.app',
     'http://localhost:3001',
-    'http://localhost:5173', // Vite dev server
-    'https://aurum-solarv3-production.up.railway.app'
+    'http://localhost:5173' // Vite dev server
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

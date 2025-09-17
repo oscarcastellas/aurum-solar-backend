@@ -7,7 +7,7 @@
 
 import https from 'https';
 
-const BACKEND_URL = 'https://backend-production-3f24.up.railway.app';
+const BACKEND_URL = 'https://aurum-solarv3-production.up.railway.app';
 const FRONTEND_URL = 'https://aurum-solar.vercel.app';
 
 // Test scenarios
