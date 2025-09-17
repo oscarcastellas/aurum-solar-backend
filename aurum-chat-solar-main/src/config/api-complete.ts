@@ -1,5 +1,5 @@
 // COMPLETE API CONFIGURATION - All 80+ Railway Endpoints
-export const API_CONFIG = {
+export const API_CONFIG_COMPLETE = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://aurum-solarv3-production.up.railway.app',
   WS_URL: import.meta.env.VITE_WS_BASE_URL || 'wss://aurum-solarv3-production.up.railway.app',
   
@@ -156,167 +156,7 @@ export const API_CONFIG = {
   WS_HEARTBEAT_INTERVAL: 30000
 };
 
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
-}
-
-export interface ApiError {
-  message: string;
-  status: number;
-  code?: string;
-}
-
-// Request Types
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
-
-// Chat Types
-export interface ChatMessage {
-  id: string;
-  content: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
-  sessionId?: string;
-}
-
-export interface ChatRequest {
-  message: string;
-  sessionId: string;
-  context?: {
-    zipCode?: string;
-    monthlyBill?: number;
-    homeType?: string;
-    roofSize?: number;
-  };
-}
-
-export interface ChatResponse {
-  response: string;
-  session_id: string;
-  timestamp: number;
-}
-
-// Analytics Types
-export interface SavingsInput {
-  zipCode: string;
-  monthlyBill: number;
-  homeType: string;
-  roofSize?: number;
-  roofType?: string;
-  shading?: string;
-}
-
-export interface SavingsResult {
-  systemSize: number;
-  systemCost: number;
-  federalCredit: number;
-  nyCredit: number;
-  netCost: number;
-  annualSavings: number;
-  monthlySavings: number;
-  paybackYears: number;
-  lifetimeSavings: number;
-  incentives: IncentiveData[];
-}
-
-export interface IncentiveData {
-  name: string;
-  amount: number;
-  type: 'federal' | 'state' | 'local' | 'utility';
-  description: string;
-  eligibility: string[];
-}
-
-export interface BoroughStats {
-  name: string;
-  installs: number;
-  avgSavings: string;
-  incentives: string;
-  payback: string;
-  avgSystemSize: number;
-  avgCost: number;
-  growthRate: number;
-}
-
-export interface NYCStatsResponse {
-  boroughs: Record<string, BoroughStats>;
-  totalInstalls: number;
-  avgSavings: number;
-  marketGrowth: number;
-  lastUpdated: string;
-}
-
-// Lead Types
-export interface LeadData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  zipCode: string;
-  monthlyBill: number;
-  homeType: string;
-  roofSize?: number;
-  solarScore: number;
-  source: string;
-  notes?: string;
-}
-
-export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  zip_code: string;
-  monthly_bill: number;
-  qualification_score: number;
-  estimated_value: number;
-  status: string;
-  created_at: string;
-}
-
-// Solar Score Types
-export interface SolarData {
-  zipCode: string;
-  monthlyBill: number;
-  homeType: string;
-  roofSize?: number;
-  roofType?: string;
-  shading?: string;
-  orientation?: string;
-}
-
-export interface SolarScoreResponse {
-  score: number;
-  factors: {
-    location: number;
-    bill: number;
-    roof: number;
-    incentives: number;
-    shading: number;
-  };
-  recommendations: string[];
-  nextSteps: string[];
-}
-
-// Enhanced Type Definitions for Complete Integration
+// Enhanced Type Definitions
 export interface LeadCreateRequest {
   name: string;
   email: string;
@@ -402,6 +242,18 @@ export interface SolarScoreRequest {
   orientation?: string;
 }
 
+export interface SolarScoreResponse {
+  solar_score: number;
+  zip_code: string;
+  monthly_bill: number;
+  roof_type: string;
+  recommendations: string[];
+  estimated_savings: number;
+  system_size_recommendation: number;
+  payback_period: number;
+  calculated_at: string;
+}
+
 export interface WebSocketMessage {
   type: 'welcome' | 'ai_response' | 'user_message' | 'system_message' | 'error';
   message: string;
@@ -419,6 +271,22 @@ export interface ConversationContext {
   roof_size?: number;
   qualification_stage?: 'initial' | 'qualifying' | 'qualified' | 'converting';
   conversation_score?: number;
+}
+
+// API Response Wrapper
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+  timestamp?: string;
+}
+
+export interface ApiError {
+  message: string;
+  status: number;
+  code?: string;
+  details?: any;
 }
 
 // Pagination

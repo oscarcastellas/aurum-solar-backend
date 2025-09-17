@@ -1,4 +1,4 @@
-import { API_CONFIG, type ApiResponse, type ApiError } from '@/config/api';
+import { API_CONFIG_COMPLETE, type ApiResponse, type ApiError } from '@/config/api-complete';
 import { CORS_CONFIG, RAILWAY_CORS_HEADERS } from '@/config/cors';
 
 /**
@@ -15,8 +15,8 @@ class CompleteAPIClient {
   private maxRetries: number = 3;
 
   constructor() {
-    this.baseURL = API_CONFIG.BASE_URL;
-    this.wsURL = API_CONFIG.WS_URL;
+    this.baseURL = API_CONFIG_COMPLETE.BASE_URL;
+    this.wsURL = API_CONFIG_COMPLETE.WS_URL;
     this.loadTokensFromStorage();
   }
 
@@ -70,7 +70,7 @@ class CompleteAPIClient {
         ...defaultHeaders,
         ...options.headers,
       },
-      signal: AbortSignal.timeout(API_CONFIG.TIMEOUT)
+      signal: AbortSignal.timeout(API_CONFIG_COMPLETE.TIMEOUT)
     };
 
     try {
@@ -142,22 +142,22 @@ class CompleteAPIClient {
   // SYSTEM & HEALTH APIs
   // ============================================================================
   async healthCheck(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.HEALTH);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.HEALTH);
   }
 
   async getSystemInfo(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.ROOT);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.ROOT);
   }
 
   async testConnection(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.TEST);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.TEST);
   }
 
   // ============================================================================
   // AUTHENTICATION APIs
   // ============================================================================
   async login(email: string, password: string): Promise<ApiResponse<any>> {
-    const response = await this.request(API_CONFIG.ENDPOINTS.AUTH.LOGIN, {
+    const response = await this.request(API_CONFIG_COMPLETE.ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
@@ -170,7 +170,7 @@ class CompleteAPIClient {
   }
 
   async logout(): Promise<ApiResponse<void>> {
-    const response = await this.request(API_CONFIG.ENDPOINTS.AUTH.LOGOUT, {
+    const response = await this.request(API_CONFIG_COMPLETE.ENDPOINTS.AUTH.LOGOUT, {
       method: 'POST'
     });
     
@@ -182,7 +182,7 @@ class CompleteAPIClient {
     if (!this.refreshToken) return false;
     
     try {
-      const response = await this.request(API_CONFIG.ENDPOINTS.AUTH.REFRESH, {
+      const response = await this.request(API_CONFIG_COMPLETE.ENDPOINTS.AUTH.REFRESH, {
         method: 'POST',
         body: JSON.stringify({ refresh_token: this.refreshToken })
       });
@@ -199,14 +199,14 @@ class CompleteAPIClient {
   }
 
   async getCurrentUser(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.AUTH.ME);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.AUTH.ME);
   }
 
   // ============================================================================
   // LEAD MANAGEMENT APIs (CRITICAL FOR REVENUE)
   // ============================================================================
   async createLead(leadData: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.CREATE, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.CREATE, {
       method: 'POST',
       body: JSON.stringify(leadData)
     });
@@ -214,34 +214,34 @@ class CompleteAPIClient {
 
   async getLeads(filters?: any): Promise<ApiResponse<any[]>> {
     const queryParams = filters ? `?${new URLSearchParams(filters).toString()}` : '';
-    return this.request(`${API_CONFIG.ENDPOINTS.LEADS.GET_ALL}${queryParams}`);
+    return this.request(`${API_CONFIG_COMPLETE.ENDPOINTS.LEADS.GET_ALL}${queryParams}`);
   }
 
   async getLead(leadId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.GET_BY_ID.replace('{id}', leadId));
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.GET_BY_ID.replace('{id}', leadId));
   }
 
   async updateLead(leadId: string, updates: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.UPDATE.replace('{id}', leadId), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.UPDATE.replace('{id}', leadId), {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
   }
 
   async deleteLead(leadId: string): Promise<ApiResponse<void>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.DELETE.replace('{id}', leadId), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.DELETE.replace('{id}', leadId), {
       method: 'DELETE'
     });
   }
 
   async qualifyLead(leadId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.QUALIFY.replace('{id}', leadId), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.QUALIFY.replace('{id}', leadId), {
       method: 'POST'
     });
   }
 
   async scoreLead(leadId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.LEADS.SCORE.replace('{id}', leadId), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.LEADS.SCORE.replace('{id}', leadId), {
       method: 'POST'
     });
   }
@@ -250,7 +250,7 @@ class CompleteAPIClient {
   // CONVERSATION & AI APIs
   // ============================================================================
   async sendChatMessage(message: string, sessionId: string, context?: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.CHAT, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.CHAT, {
       method: 'POST',
       body: JSON.stringify({
         message,
@@ -262,7 +262,7 @@ class CompleteAPIClient {
   }
 
   async sendAIMessage(message: string, sessionId: string, context?: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.AI_CHAT, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.AI_CHAT, {
       method: 'POST',
       body: JSON.stringify({
         message,
@@ -274,7 +274,7 @@ class CompleteAPIClient {
   }
 
   async processConversation(message: string, sessionId: string, leadId?: string, context?: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.CONVERSATION, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.CONVERSATION, {
       method: 'POST',
       body: JSON.stringify({
         message,
@@ -287,40 +287,40 @@ class CompleteAPIClient {
   }
 
   async getNYCMarketData(zipCode: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.NYC_MARKET_DATA, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.NYC_MARKET_DATA, {
       method: 'POST',
       body: JSON.stringify({ zip_code: zipCode })
     });
   }
 
   async calculateSavings(input: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.CALCULATE_SAVINGS, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.CALCULATE_SAVINGS, {
       method: 'POST',
       body: JSON.stringify(input)
     });
   }
 
   async getLeadStatus(sessionId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.LEAD_STATUS.replace('{session_id}', sessionId));
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.LEAD_STATUS.replace('{session_id}', sessionId));
   }
 
   async getConversationPerformance(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.CONVERSATION.PERFORMANCE);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.CONVERSATION.PERFORMANCE);
   }
 
   // ============================================================================
   // B2B EXPORT APIs (REVENUE GENERATION)
   // ============================================================================
   async getB2BLeads(): Promise<ApiResponse<any[]>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.LEADS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.LEADS);
   }
 
   async getB2BPlatforms(): Promise<ApiResponse<any[]>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.PLATFORMS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.PLATFORMS);
   }
 
   async exportB2BLead(leadId: string, platform: string, format: string = 'json'): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.EXPORT, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.EXPORT, {
       method: 'POST',
       body: JSON.stringify({
         lead_id: leadId,
@@ -331,7 +331,7 @@ class CompleteAPIClient {
   }
 
   async deliverLead(leadId: string, platform: string, priority: string = 'normal'): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.DELIVER_LEAD, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.DELIVER_LEAD, {
       method: 'POST',
       body: JSON.stringify({
         lead_id: leadId,
@@ -342,30 +342,30 @@ class CompleteAPIClient {
   }
 
   async getDeliveryStatus(requestId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.DELIVERY_STATUS.replace('{request_id}', requestId));
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.DELIVERY_STATUS.replace('{request_id}', requestId));
   }
 
   async getB2BHealth(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.HEALTH);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.HEALTH);
   }
 
   async optimizeRouting(timePeriod: string = '7d'): Promise<ApiResponse<any>> {
-    return this.request(`${API_CONFIG.ENDPOINTS.B2B.ROUTING}?time_period=${timePeriod}`);
+    return this.request(`${API_CONFIG_COMPLETE.ENDPOINTS.B2B.ROUTING}?time_period=${timePeriod}`);
   }
 
   async getRoutingDecision(leadId: string, strategy: string = 'revenue_maximization', priority: string = 'normal'): Promise<ApiResponse<any>> {
-    return this.request(`${API_CONFIG.ENDPOINTS.B2B.ROUTING_DECISION}?lead_id=${leadId}&strategy=${strategy}&priority=${priority}`);
+    return this.request(`${API_CONFIG_COMPLETE.ENDPOINTS.B2B.ROUTING_DECISION}?lead_id=${leadId}&strategy=${strategy}&priority=${priority}`);
   }
 
   async getB2BMetrics(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.B2B.METRICS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.B2B.METRICS);
   }
 
   // ============================================================================
   // EXPORT MANAGEMENT APIs
   // ============================================================================
   async exportLead(leadId: string, platform: string, format: string = 'json'): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.EXPORTS.EXPORT_LEAD, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.EXPORTS.EXPORT_LEAD, {
       method: 'POST',
       body: JSON.stringify({
         lead_id: leadId,
@@ -376,15 +376,15 @@ class CompleteAPIClient {
   }
 
   async getExportHistory(): Promise<ApiResponse<any[]>> {
-    return this.request(API_CONFIG.ENDPOINTS.EXPORTS.HISTORY);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.EXPORTS.HISTORY);
   }
 
   async getPlatformsStatus(): Promise<ApiResponse<any[]>> {
-    return this.request(API_CONFIG.ENDPOINTS.EXPORTS.PLATFORMS_STATUS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.EXPORTS.PLATFORMS_STATUS);
   }
 
   async bulkExport(leadIds: string[], platform: string, format: string = 'json'): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.EXPORTS.BULK_EXPORT, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.EXPORTS.BULK_EXPORT, {
       method: 'POST',
       body: JSON.stringify({
         lead_ids: leadIds,
@@ -398,52 +398,52 @@ class CompleteAPIClient {
   // REVENUE ANALYTICS APIs
   // ============================================================================
   async getRevenueAnalytics(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.REVENUE);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.ANALYTICS.REVENUE);
   }
 
   async getLeadAnalytics(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.LEADS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.ANALYTICS.LEADS);
   }
 
   async getRevenueExecutiveSummary(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.REVENUE.EXECUTIVE_SUMMARY);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.REVENUE.EXECUTIVE_SUMMARY);
   }
 
   async getRealTimeDashboard(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.REVENUE.REAL_TIME_DASHBOARD);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.REVENUE.REAL_TIME_DASHBOARD);
   }
 
   async getConversationAnalytics(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.REVENUE.CONVERSATION_ANALYTICS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.REVENUE.CONVERSATION_ANALYTICS);
   }
 
   // ============================================================================
   // NYC MARKET DATA APIs
   // ============================================================================
   async getNYCMarketData(zipCode: string): Promise<ApiResponse<any>> {
-    return this.request(`${API_CONFIG.ENDPOINTS.NYC.MARKET_DATA}?zip_code=${zipCode}`);
+    return this.request(`${API_CONFIG_COMPLETE.ENDPOINTS.NYC.MARKET_DATA}?zip_code=${zipCode}`);
   }
 
   async getNYCBoroughStats(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.NYC.BOROUGH_STATS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.NYC.BOROUGH_STATS);
   }
 
   // ============================================================================
   // AI & SOLAR CALCULATIONS
   // ============================================================================
   async calculateSolarScore(input: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.AI.SOLAR_SCORE, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.AI.SOLAR_SCORE, {
       method: 'POST',
       body: JSON.stringify(input)
     });
   }
 
   async getAIQuestions(leadId: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.AI.QUESTIONS.replace('{lead_id}', leadId));
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.AI.QUESTIONS.replace('{lead_id}', leadId));
   }
 
   async analyzeLead(leadId: string, analysisData: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.AI.ANALYZE.replace('{lead_id}', leadId), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.AI.ANALYZE.replace('{lead_id}', leadId), {
       method: 'POST',
       body: JSON.stringify(analysisData)
     });
@@ -453,29 +453,29 @@ class CompleteAPIClient {
   // PLATFORM MANAGEMENT APIs
   // ============================================================================
   async getPlatforms(): Promise<ApiResponse<any[]>> {
-    return this.request(API_CONFIG.ENDPOINTS.PLATFORMS.GET_ALL);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PLATFORMS.GET_ALL);
   }
 
   async createPlatform(platformData: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PLATFORMS.CREATE, {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PLATFORMS.CREATE, {
       method: 'POST',
       body: JSON.stringify(platformData)
     });
   }
 
   async getPlatformConfig(platformCode: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PLATFORMS.CONFIG.replace('{platform_code}', platformCode));
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PLATFORMS.CONFIG.replace('{platform_code}', platformCode));
   }
 
   async updatePlatformConfig(platformCode: string, config: any): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PLATFORMS.UPDATE_CONFIG.replace('{platform_code}', platformCode), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PLATFORMS.UPDATE_CONFIG.replace('{platform_code}', platformCode), {
       method: 'PUT',
       body: JSON.stringify(config)
     });
   }
 
   async deactivatePlatform(platformCode: string): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PLATFORMS.DEACTIVATE.replace('{platform_code}', platformCode), {
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PLATFORMS.DEACTIVATE.replace('{platform_code}', platformCode), {
       method: 'POST'
     });
   }
@@ -484,18 +484,18 @@ class CompleteAPIClient {
   // PERFORMANCE MONITORING APIs
   // ============================================================================
   async getPerformanceDashboard(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PERFORMANCE.DASHBOARD);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PERFORMANCE.DASHBOARD);
   }
 
   async getPerformanceMetrics(): Promise<ApiResponse<any>> {
-    return this.request(API_CONFIG.ENDPOINTS.PERFORMANCE.METRICS);
+    return this.request(API_CONFIG_COMPLETE.ENDPOINTS.PERFORMANCE.METRICS);
   }
 
   // ============================================================================
   // WEBSOCKET CONNECTION
   // ============================================================================
   createWebSocketConnection(sessionId: string): WebSocket {
-    const ws = new WebSocket(`${this.wsURL}${API_CONFIG.ENDPOINTS.WEBSOCKET.CHAT}?session_id=${sessionId}`);
+    const ws = new WebSocket(`${this.wsURL}${API_CONFIG_COMPLETE.ENDPOINTS.WEBSOCKET.CHAT}?session_id=${sessionId}`);
     
     ws.onopen = () => {
       console.log('WebSocket connected to Railway backend');
@@ -518,7 +518,7 @@ class CompleteAPIClient {
         setTimeout(() => {
           console.log(`Attempting to reconnect WebSocket (${this.connectionRetries}/${this.maxRetries})`);
           this.createWebSocketConnection(sessionId);
-        }, API_CONFIG.WS_RECONNECT_DELAY * this.connectionRetries);
+        }, API_CONFIG_COMPLETE.WS_RECONNECT_DELAY * this.connectionRetries);
       }
     };
     

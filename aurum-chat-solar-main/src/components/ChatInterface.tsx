@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, MessageCircle, Send, User, Bot, Zap } from 'lucide-react';
-import { useChat } from '@/hooks/useChat';
+import { X, MessageCircle, Send, User, Bot, Zap, Wifi, WifiOff } from 'lucide-react';
+import { useRailwayChat } from '@/hooks/useRailwayChat';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
@@ -21,19 +21,23 @@ interface ChatInterfaceProps {
 
 export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Generate a unique session ID for this chat session
   const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   const {
-    messages,
-    solarScore,
+    isHealthy,
+    isHealthLoading,
+    isConnected,
     sendMessage,
-    clearMessages,
-    isLoading,
-    error
-  } = useChat(sessionId);
+    isSending,
+    sendError,
+    latestBotMessage,
+    testConnection,
+    connectionTestData
+  } = useRailwayChat(sessionId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,25 +47,48 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle bot responses
+  useEffect(() => {
+    if (latestBotMessage) {
+      const botMessage: Message = {
+        id: `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: latestBotMessage,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+    }
+  }, [latestBotMessage]);
+
   const handleSendMessage = () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isSending || !isConnected) return;
     
+    // Add user message to local state
+    const userMessage: Message = {
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      content: inputValue,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Send to Railway backend
     sendMessage(inputValue);
     setInputValue('');
   };
 
   // Initialize with welcome message if no messages exist
   useEffect(() => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && isConnected) {
       const welcomeMessage: Message = {
         id: 'welcome',
         content: "Hi! I'm your NYC Solar Assistant. I'll help you discover your home's solar potential and savings. What's your ZIP code?",
         sender: 'bot',
         timestamp: new Date()
       };
-      // This will be handled by the useChat hook
+      setMessages([welcomeMessage]);
     }
-  }, []);
+  }, [isConnected]);
 
   if (!isOpen) return null;
 
@@ -74,29 +101,45 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
               <MessageCircle className="mr-2 h-5 w-5" />
               NYC Solar Chat
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onClose}
-              className="text-white hover:bg-white/20"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Connection Status */}
+              <div className="flex items-center gap-1 text-xs">
+                {isHealthLoading ? (
+                  <LoadingSpinner size="sm" />
+                ) : isConnected ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    <span>Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    <span>Disconnected</span>
+                  </>
+                )}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={onClose}
+                className="text-white hover:bg-white/20"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           
-          {/* Solar Score Display */}
-          {solarScore > 0 && (
+          {/* Connection Test Button */}
+          {!isConnected && (
             <div className="mt-3">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span>Your Solar Score</span>
-                <span>{solarScore}/100</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-3">
-                <div 
-                  className="bg-secondary h-3 rounded-full solar-score-fill transition-all duration-2000 ease-out"
-                  style={{ '--score-width': `${solarScore}%` } as React.CSSProperties}
-                />
-              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => testConnection()}
+                className="text-white border-white/30 hover:bg-white/20"
+              >
+                Test Connection
+              </Button>
             </div>
           )}
         </CardHeader>
@@ -147,27 +190,43 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
               </div>
             ))}
             
-            {isLoading && (
+            {isSending && (
               <div className="flex justify-start">
                 <div className="flex items-start gap-2 max-w-[80%]">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary text-primary">
                     <Bot className="h-4 w-4" />
                   </div>
                   <div className="p-3 rounded-lg bg-muted text-foreground">
-                    <LoadingSpinner size="sm" />
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      <span className="text-sm">AI is thinking...</span>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
             
-            {error && (
+            {sendError && (
               <div className="flex justify-start">
                 <div className="flex items-start gap-2 max-w-[80%]">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center bg-destructive text-white">
                     <Bot className="h-4 w-4" />
                   </div>
                   <div className="p-3 rounded-lg bg-destructive/10 text-destructive">
-                    <p className="text-sm">Sorry, I encountered an error. Please try again.</p>
+                    <p className="text-sm">Sorry, I encountered an error connecting to the Railway backend. Please try again.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {!isConnected && !isHealthLoading && (
+              <div className="flex justify-start">
+                <div className="flex items-start gap-2 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-orange-500 text-white">
+                    <WifiOff className="h-4 w-4" />
+                  </div>
+                  <div className="p-3 rounded-lg bg-orange-50 text-orange-700">
+                    <p className="text-sm">Unable to connect to Railway backend. Please check your connection and try again.</p>
                   </div>
                 </div>
               </div>
@@ -179,18 +238,21 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
           {/* Input Area */}
           <div className="flex gap-2">
             <Input
-              placeholder="Type your message..."
+              id="chat-message-input"
+              name="chat-message"
+              placeholder={isConnected ? "Type your message..." : "Connecting to Railway backend..."}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               className="flex-1"
-              disabled={isLoading}
+              disabled={isSending || !isConnected}
+              aria-label="Type your message"
             />
             <Button 
               onClick={handleSendMessage} 
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isSending || !isConnected}
             >
-              {isLoading ? (
+              {isSending ? (
                 <LoadingSpinner size="sm" />
               ) : (
                 <Send className="h-4 w-4" />
@@ -207,7 +269,7 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
                 setInputValue("What incentives are available?");
                 handleSendMessage();
               }}
-              disabled={isLoading}
+              disabled={isSending || !isConnected}
             >
               <Zap className="mr-1 h-3 w-3" />
               Incentives
@@ -219,7 +281,7 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
                 setInputValue("How much will I save?");
                 handleSendMessage();
               }}
-              disabled={isLoading}
+              disabled={isSending || !isConnected}
             >
               Savings
             </Button>
@@ -230,7 +292,7 @@ export const ChatInterface = ({ isOpen, onClose }: ChatInterfaceProps) => {
                 setInputValue("Get quotes now");
                 handleSendMessage();
               }}
-              disabled={isLoading}
+              disabled={isSending || !isConnected}
             >
               Get Quotes
             </Button>
